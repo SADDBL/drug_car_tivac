@@ -44,8 +44,8 @@ int main(void)
 //	float vpl = 4,vil = 3.5,vdl = 0.8;	//左轮PID
 //	float vpr = 4,vir = 3.5,vdr = 0.8;	//右轮PID
 	float pp = 0.07,pi = 0,pd = 0.0;			//位置环PID
-	float ap = 0.5,ai = 0,ad =0;			//角度环PID
-	float tp = 0.8,ti = 0,td =0;			//原地转动PID
+	float ap = 0.01,ai = 0,ad =0;			//角度环PID
+	float tp = 0.008,ti = 0,td =0;			//原地转动PID
 	int i,j;
 	//使用PLL输出频率200MHz，第一个系数2.5分频，得到80MHz
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
@@ -61,7 +61,8 @@ int main(void)
 	pid_init(&pid_a,ap,ad,ai,(float)0.5,(float)-0.5);
 	pid_init(&pid_p,pp,pd,pi,(float)0.5,(float)-0.5);
 	pid_init(&pid_turn,tp,td,ti,(float)0.5,(float)-0.5);
-	//motor_pwm_set(0.5,0);
+	UARTCharPutNonBlocking(UART0_BASE,'a');
+//	motor_pwm_set(0.,0.5);
 	//motor_pwm_set(0.17,-0.22);
 	
 //	//D0
@@ -79,8 +80,9 @@ int main(void)
 	//	printf("vl: %f, %f, %f\r\n",left_motor.Speed,right_motor.Speed,V_onrun);
 	//	printf("i=%f\r\n",left_pid.i);
 	//	printf("qei: %u, %u, %u\r\n",left_encoder_count,right_encoder_count,right_encoder_count-left_encoder_count);
-		printf("a: %f, %f, %f\r\n",Car.Angle,-90.0,pid_turn.output);
-		//printf("cam: %d\r\n",line_det_data);
+	//	printf("a: %f, %f, %f\r\n",Car.Angle,-90.0,pid_turn.output);
+	//	printf("cam: %d\r\n",line_det_data);
+		printf("%d\r\n",state_val);
 		//printf("p: %f\r\n",pid_p.output);
 	//	printf("route: %f, %f\r\n",Car.route,90.0);
 	//	UARTCharPutNonBlocking(UART0_BASE,'a');
@@ -117,12 +119,17 @@ void TIMER0_IERHandler(void)
 //		count=0;
 //		if(v==3) v=0;
 //	}
+
+//	speed_cal();
+//	pid_realize(&pid_a,LINE_DET_POS-line_det_data);
+//	motor_speed_set(V_onrun-pid_a.output,V_onrun+pid_a.output);
 	
 	/***** PID控制环节 *****/
 	//测速并更新路程
 	//point_to_point(20);
-	//point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
-	if(flag==NOT_OK)
-		flag = Turn_90(1);
-	else motor_pwm_set(0,0);
+//	point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
+	//if(flag==NOT_OK)
+	//	flag = Turn_90(2);
+	//else motor_pwm_set(0,0);
+	mission1();
 }

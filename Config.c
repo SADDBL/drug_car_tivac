@@ -33,7 +33,7 @@ void USART5_IRAHandler(void){
 		if(flag==1){//接收巡线数据
 			data_str[len] = rxbuf;
 			len++;
-//			UARTCharPutNonBlocking(UART0_BASE,rxbuf);
+			UARTCharPutNonBlocking(UART0_BASE,rxbuf);
 //			UARTCharPutNonBlocking(UART0_BASE,len);
 			if(len==3) {
 				flag = 0;

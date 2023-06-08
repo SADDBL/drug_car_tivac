@@ -73,6 +73,7 @@ extern pid pid_p;	//位置环PID
 extern pid pid_a;	//角度环PID
 extern pid pid_turn;	//原地转动PID
 extern car Car;
+extern int state_val;
 
 void motor_Init(motor *);
 void motor_speed_set(float vl,float vr);
@@ -83,6 +84,8 @@ float first_order_filter(float new_value,float last_value,float a);
 void motor_pwm_set(float pwml,float pwmr);
 void pid_reset(pid *);
 void mission1(void);
+void mission2(void);
+void mission3(void);
 void motor_reset(motor* M);
 void car_Init(car *c);
 float slow_start(float tar_v);

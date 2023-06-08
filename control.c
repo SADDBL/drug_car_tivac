@@ -6,7 +6,7 @@ int det_F;	//Ê¶±ğÈÎÎñ±êÖ¾Î» 0£ºÎŞÈÎÎñ£¬1£º¿ªÊ¼½×¶ÎÊ¶±ğÊı×Ö¿¨Æ¬£¬2£º²íÂ·¿ÚÊ¶±ğµØÃ
 int load_F;	//Ò©Îï×°ÔØ±êÖ¾Î» 0£ºÎ´×°ÔØ£¬1£ºÒÑ×°ÔØ
 static int destination_F;	//Ä¿µÄµØ±êÖ¾Î» 1£º½ü¶ËÒ©·¿£¬2£ºÖĞ²¿Ò©·¿£¬3£ºÔ¶¶ËÒ©·¿
 //static int flag=0;	//Í¨ÓÃ±êÖ¾Î»
-static int state_vel = 0;
+int state_val = 0;
 
 /***** ÈÎÎñº¯Êı *****/
 void mission1(void){
@@ -16,7 +16,7 @@ void mission1(void){
 	static int pin_flag=0;
 	int i,j,flag;
 	/***** ×´Ì¬Ñ¡Ôñ *****/
-	switch(state_vel){
+	switch(state_val){
 		//×´Ì¬0£¬³õÊ¼»¯²¢µÈ´ı
 		case 0:{
 			//±êÖ¾Î»¸´Î»
@@ -32,11 +32,12 @@ void mission1(void){
 			UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
 			
 			//½øÈëÏÂÒ»¸ö×´Ì¬
-			state_vel++;
+			state_val++;
 			break;
 		}
 		//Ê¶±ğÊı×Ö
 		case 1:{
+			if(det_F==1) UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
 			//»ñÈ¡ÉãÏñÍ·Ê¶±ğµÄÊı×Ö
 			if(det_F==0){
 				room_num = num_det_data[0];
@@ -47,7 +48,7 @@ void mission1(void){
 				}
 				//Õı³££¬×ª»»µ½ÏÂÒ»¸ö×´Ì¬
 				else{
-					state_vel++;
+					state_val++;
 				}
 			}
 			break;
@@ -55,12 +56,11 @@ void mission1(void){
 		//µÈ´ıÒ©Æ··ÅÏÂ
 		case 2:{
 			//°´¼üÈ¥¶¶
-			if(pin_flag==0&&KEY_READ){
+			if(pin_flag==0&&!KEY_READ){
 				//ÑÓÊ±Ô¼20ms
-				for(i=0;i<15;i++)
-					for(j=0;j<2000;j++);
+
 				
-				if(KEY_READ){
+				if(!KEY_READ){
 					pin_flag=1;
 					//pin_state=1;
 					load_F=1;
@@ -68,10 +68,11 @@ void mission1(void){
 			}
 			if(load_F == 1){
 				//ÑÓÊ±500msÔÙÆô¶¯
-				SysCtlDelay(SysCtlClockGet()/6);
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				det_F=3;
-				state_vel++;
+				state_val++;
+				for(i=0;i<20;i++)
+					for(j=0;j<2000;j++);
 			}
 			break;
 		}
@@ -81,7 +82,7 @@ void mission1(void){
 			//½øÈëÊ®×ÖÂ·¿Ú
 			if(flag==OK){
 				car_reset();
-				state_vel=5;//½øÈëÏÂÒ»¸ö×´Ì¬
+				state_val=5;//½øÈëÏÂÒ»¸ö×´Ì¬
 			}
 			break;
 		}
@@ -96,7 +97,7 @@ void mission1(void){
 				else if(room_num==2)
 					Car.Angle-=90;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
-				state_vel++;
+				state_val++;
 			}
 			break;
 		}
@@ -109,19 +110,20 @@ void mission1(void){
 				det_F=0;
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
 				car_reset();
-				state_vel++;
+				flag=NOT_OK;
+				state_val++;
 			}
 			break;
 		}
 		//µÈ´ıÒ©ÎïÈ¡×ß
 		case 7:{
 			//°´¼üÈ¥¶¶
-			if(pin_flag==1&&!KEY_READ){
+			if(pin_flag==1&&KEY_READ){
 				//ÑÓÊ±Ô¼20ms
 				for(i=0;i<15;i++)
 					for(j=0;j<2000;j++);
 				
-				if(!KEY_READ){
+				if(KEY_READ){
 					pin_flag=0;
 					//pin_state=1;
 					load_F=0;
@@ -130,7 +132,8 @@ void mission1(void){
 			if(load_F==0){
 				RED_OFF;
 				det_F=3;
-				state_vel++;
+				state_val++;
+				flag=NOT_OK;
 			}
 			break;
 		}
@@ -141,7 +144,8 @@ void mission1(void){
 				det_F=0;
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
 				car_reset();
-				state_vel++;
+				flag=NOT_OK;
+				state_val++;
 			}
 			break;
 		}
@@ -156,7 +160,8 @@ void mission1(void){
 				else if(room_num==2)
 					Car.Angle-=90;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
-				state_vel++;
+				flag=NOT_OK;
+				state_val++;
 			}
 			break;
 		}
@@ -169,14 +174,490 @@ void mission1(void){
 				det_F = 0;
 				car_reset();
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
-				
+				//motor_pwm_set(0,0);
+				state_val++;
 			}
 			break;
+		}
+		case 11:{
+			motor_pwm_set(0,0);
 		}
 	}
 	/***** ×´Ì¬Ñ¡Ôñ½áÊø *****/
 }
 
+void mission2(void){
+	static int room_num = 0;	//Ä¿±ê²¡·¿ºÅ
+	static int turn_dir = 0;
+	float v_temp = 0;
+//	int pin_state;
+	static int pin_flag=0;
+	int i,j,flag = NOT_OK;
+	/***** ×´Ì¬Ñ¡Ôñ *****/
+	switch(state_val){
+		//×´Ì¬0£¬³õÊ¼»¯²¢µÈ´ı
+		case 0:{
+			//±êÖ¾Î»¸´Î»
+			det_F = 0;
+			load_F = 0;
+			destination_F = 1;
+			//flag = 0;
+			//½á¹¹Ìå¸´Î»
+			car_reset();
+			
+			//×¼±¸Ê¶±ğÊı×Ö
+			det_F = 1;
+			UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			
+			//½øÈëÏÂÒ»¸ö×´Ì¬
+			state_val++;
+			break;
+		}
+		//Ê¶±ğÊı×Ö
+		case 1:{
+			if(det_F==1) UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			//»ñÈ¡ÉãÏñÍ·Ê¶±ğµÄÊı×Ö
+			if(det_F==0){
+				room_num = num_det_data[0];
+				//Î´¶Áµ½Êı×Ö£¬ÔÙ´ÎÊ¶±ğ
+				if(room_num == 0){
+					det_F = 1;
+					UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+				}
+				//Õı³££¬×ª»»µ½ÏÂÒ»¸ö×´Ì¬
+				else{
+					det_F=1;
+					for(i=0;i<0;i++)
+						num_det_data[i]=0;
+					state_val++;
+				}
+			}
+			break;
+		}
+		//µÈ´ıÒ©Æ··ÅÏÂ
+		case 2:{
+			//°´¼üÈ¥¶¶
+			if(pin_flag==0&&!KEY_READ){
+				//ÑÓÊ±Ô¼20ms
+				for(i=0;i<15;i++)
+					for(j=0;j<2000;j++);
+				if(!KEY_READ){
+					pin_flag=1;
+					//pin_state=1;
+					load_F=1;
+				}
+			}
+			if(load_F == 1){
+				//ÑÓÊ±500msÔÙÆô¶¯
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				det_F=3;
+				state_val++;
+				for(i=0;i<20;i++)
+					for(j=0;j<2000;j++);
+			}
+			break;
+		}
+		//ÔË¶¯µ½ÖĞ¶ÎÂ·¿Ú£¬Ê¶±ğÊı×Ö
+		case 3:{
+			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
+			//½øÈëÊ®×ÖÂ·¿Ú£¬¿ªÊ¼Ê¶±ğÊı×Ö
+			if(flag==OK&&det_F==1){
+				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			}
+			//Ê¶±ğÊı×ÖÍê³É
+			if(det_F==0){
+				if(room_num==num_det_data[0]) turn_dir=1;	//×ó×ª
+				else if(room_num==num_det_data[1]) turn_dir=2;	//ÓÒ×ª
+				else {
+					det_F=1;
+					turn_dir=0;
+				}
+			}
+			if(turn_dir!=0){
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬
+			}
+			break;
+		}
+		//×ßµ½Â·¿ÚÖĞĞÄ
+		case 4:{
+			flag = point_to_point(15);
+			if(flag == OK){
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬	
+			}
+		}
+		//×ª90¡ã
+		case 5:{
+			flag = Turn_90(turn_dir);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir==1)
+					Car.Angle+=90;
+				else if(turn_dir==2)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				state_val++;
+			}
+			break;
+		}
+		//×ßµ½Ò©·¿
+		case 6:{
+			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			if(flag==OK){
+				RED_ON;
+				det_F=0;
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				car_reset();
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//µÈ´ıÒ©ÎïÈ¡×ß
+		case 7:{
+			//°´¼üÈ¥¶¶
+			if(pin_flag==1&&KEY_READ){
+				//ÑÓÊ±Ô¼20ms
+				for(i=0;i<15;i++)
+					for(j=0;j<2000;j++);		
+				if(KEY_READ){
+					pin_flag=0;
+					//pin_state=1;
+					load_F=0;
+				}
+			}
+			if(load_F==0){
+				RED_OFF;
+				det_F=3;
+				state_val++;
+				flag=NOT_OK;
+			}
+			break;
+		}
+		//µ¹³µµ½Â·¿ÚÖĞ¼ä
+		case 8:{
+			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			if(flag==OK){
+				det_F=0;
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				car_reset();
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//Ô­µØ×ª
+		case 9:{
+			flag = Turn_90(turn_dir);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir==1)
+					Car.Angle+=90;
+				else if(turn_dir==2)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//·µ»ØÆğµã
+		case 10:{
+			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+CORRIDOR_WIDTH/2);
+			if(flag==OK){
+				GREEN_ON;
+				det_F = 0;
+				car_reset();
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				state_val++;
+			}
+			break;
+		}
+		//Í£Ö¹
+		case 11:{
+			motor_pwm_set(0,0);
+		}
+	}
+	/***** ×´Ì¬Ñ¡Ôñ½áÊø *****/
+}
+
+void mission3(void){
+	static int room_num = 0;	//Ä¿±ê²¡·¿ºÅ
+	static int turn_dir[2]= {0,0};
+	float v_temp = 0;
+//	int pin_state;
+	static int pin_flag=0;
+	int i,j,flag = NOT_OK;
+	/***** ×´Ì¬Ñ¡Ôñ *****/
+	switch(state_val){
+		//×´Ì¬0£¬³õÊ¼»¯²¢µÈ´ı
+		case 0:{
+			//±êÖ¾Î»¸´Î»
+			det_F = 0;
+			load_F = 0;
+			destination_F = 1;
+			//flag = 0;
+			//½á¹¹Ìå¸´Î»
+			car_reset();
+			
+			//×¼±¸Ê¶±ğÊı×Ö
+			det_F = 1;
+			UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			
+			//½øÈëÏÂÒ»¸ö×´Ì¬
+			state_val++;
+			break;
+		}
+		//Ê¶±ğÊı×Ö
+		case 1:{
+			if(det_F==1) UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			//»ñÈ¡ÉãÏñÍ·Ê¶±ğµÄÊı×Ö
+			if(det_F==0){
+				room_num = num_det_data[0];
+				//Î´¶Áµ½Êı×Ö£¬ÔÙ´ÎÊ¶±ğ
+				if(room_num == 0){
+					det_F = 1;
+					UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+				}
+				//Õı³££¬×ª»»µ½ÏÂÒ»¸ö×´Ì¬
+				else{
+					for(i=0;i<0;i++)
+						num_det_data[i]=0;
+					state_val++;
+				}
+			}
+			break;
+		}
+		//µÈ´ıÒ©Æ··ÅÏÂ
+		case 2:{
+			//°´¼üÈ¥¶¶
+			if(pin_flag==0&&!KEY_READ){
+				//ÑÓÊ±Ô¼20ms
+				for(i=0;i<15;i++)
+					for(j=0;j<2000;j++);
+				if(!KEY_READ){
+					pin_flag=1;
+					//pin_state=1;
+					load_F=1;
+				}
+			}
+			if(load_F == 1){
+				//ÑÓÊ±500msÔÙÆô¶¯
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				det_F=1;
+				state_val++;
+				for(i=0;i<20;i++)
+					for(j=0;j<2000;j++);
+			}
+			break;
+		}
+		//ÔË¶¯µ½Ô¶¶ÎÂ·¿Ú£¬Ê¶±ğÊı×Ö
+		case 3:{
+			flag = point_to_point(3*CORRIDOR_LENGTH_1+2*CORRIDOR_WIDTH);
+			//½øÈëÊ®×ÖÂ·¿Ú£¬¿ªÊ¼Ê¶±ğÊı×Ö
+			if(flag==OK&&det_F==1){
+				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			}
+			//Ê¶±ğÊı×ÖÍê³É
+			if(det_F==0){
+				if(room_num==num_det_data[0]||room_num==num_det_data[1]) turn_dir[0]=1;	//×ó×ª
+				else if(room_num==num_det_data[2]||room_num==num_det_data[3]) turn_dir[0]=2;	//ÓÒ×ª
+				else {
+					det_F=1;
+					turn_dir[0]=0;
+				}
+			}
+			if(turn_dir[0]!=0){
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬
+			}
+			break;
+		}
+		//×ßµ½Â·¿ÚÖĞĞÄ
+		case 4:{
+			flag = point_to_point(15);
+			if(flag == OK){
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬	
+			}
+		}
+		//×ª90¡ã
+		case 5:{
+			flag = Turn_90(turn_dir[0]);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir[0]==1)
+					Car.Angle+=90;
+				else if(turn_dir[0]==2)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				state_val++;
+			}
+			break;
+		}
+		//×ßµ½ÏÂÒ»¸öÂ·¿Ú£¬²¢Ê¶±ğÊı×Ö
+		case 6:{
+			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2);
+			//½øÈëÊ®×ÖÂ·¿Ú£¬¿ªÊ¼Ê¶±ğÊı×Ö
+			if(flag==OK&&det_F==1){
+				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
+			}
+			//Ê¶±ğÊı×ÖÍê³É
+			if(det_F==0){
+				if(room_num==num_det_data[0]) turn_dir[1]=1;	//×ó×ª
+				else if(room_num==num_det_data[1]) turn_dir[1]=2;	//ÓÒ×ª
+				else {
+					det_F=1;
+					turn_dir[1]=0;
+				}
+			}
+			if(turn_dir[1]!=0){
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬
+			}
+			break;
+		}
+		//×ßµ½Â·¿ÚÖĞĞÄ
+		case 7:{
+			flag = point_to_point(15);
+			if(flag == OK){
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬	
+			}
+		}	
+		//×ª90¡ã
+		case 8:{
+			flag = Turn_90(turn_dir[1]);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir[1]==1)
+					Car.Angle+=90;
+				else if(turn_dir[1]==2)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				state_val++;
+			}
+			break;
+		}
+		//×ßµ½Ò©·¿
+		case 9:{
+			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			if(flag==OK){
+				RED_ON;
+				det_F=0;
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				car_reset();
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//µÈ´ıÒ©ÎïÈ¡×ß
+		case 10:{
+			//°´¼üÈ¥¶¶
+			if(pin_flag==1&&KEY_READ){
+				//ÑÓÊ±Ô¼20ms
+				for(i=0;i<15;i++)
+					for(j=0;j<2000;j++);		
+				if(KEY_READ){
+					pin_flag=0;
+					//pin_state=1;
+					load_F=0;
+				}
+			}
+			if(load_F==0){
+				RED_OFF;
+				det_F=3;
+				state_val++;
+				flag=NOT_OK;
+			}
+			break;
+		}
+		//µ¹³µµ½Â·¿ÚÖĞ¼ä
+		case 11:{
+			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			if(flag==OK){
+				det_F=0;
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				car_reset();
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//Ô­µØ×ª
+		case 12:{
+			flag = Turn_90(turn_dir[1]);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir[1]==1)
+					Car.Angle+=90;
+				else if(turn_dir[1]==2)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag=NOT_OK;
+				state_val++;
+			}
+			break;
+		}
+		//×ßµ½ÏÂÒ»¸öÂ·¿Ú
+		case 13:{
+				flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
+			if(flag == OK){
+				flag=NOT_OK;
+				car_reset();
+				state_val++;//½øÈëÏÂÒ»¸ö×´Ì¬	
+			}
+		}
+		//×ª90¡ã
+		case 14:{
+			flag = Turn_90(turn_dir[1]%2+1);
+			if(flag == OK){
+				det_F=3;
+				car_reset();
+				if(turn_dir[1]==2)
+					Car.Angle+=90;
+				else if(turn_dir[1]==1)
+					Car.Angle-=90;
+				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				state_val++;
+			}
+			break;
+		}
+		//·µ»ØÆğµã
+		case 15:{
+			flag = point_to_point(3*CORRIDOR_LENGTH_1+2.5*CORRIDOR_WIDTH);
+			if(flag==OK){
+				GREEN_ON;
+				det_F = 0;
+				car_reset();
+				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+				state_val++;
+			}
+			break;
+		}
+		//Í£Ö¹
+		case 16:{
+			motor_pwm_set(0,0);
+		}
+	}
+	/***** ×´Ì¬Ñ¡Ôñ½áÊø *****/
+}
 /***** Ğ¡³µ¿ØÖÆº¯Êı *****/
 void car_Init(car *c){
 	c->Angle = 0;
@@ -190,19 +671,19 @@ void car_Init(car *c){
   * @retval None
   */
 float slow_start(float tar_v){
-	if(Car.route>=20)
+	if(fabs(Car.route)>=20)
 	{
 		return tar_v;
 	}
-	else if(Car.route<=3)
+	else if(fabs(Car.route)<=3)
 	{
 		return tar_v*(float)0.4;
 	}
-	else if(Car.route<=6&&Car.route>3)
+	else if(fabs(Car.route)<=6&&fabs(Car.route)>3)
 	{
 		return tar_v*(float)0.6;
 	}
-	else if(Car.route<=12&&Car.route>6)
+	else if(fabs(Car.route)<=12&&fabs(Car.route)>6)
 	{
 		return tar_v*(float)0.75;
 	}
@@ -232,12 +713,12 @@ int point_to_point(float len){
 		v_temp=pid_p.output;
 	}
 	
-	if(fabs(Car.Speed)<0.03){
+	if(fabs(Car.Speed)<0.03&&fabs(Car.route-len)<0.5){
 		motor_pwm_set(0,0);
 		return OK;
 	}
 	else {
-		//pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
+		pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
 		motor_speed_set(v_temp-pid_a.output,v_temp+pid_a.output);
 	}
 	return NOT_OK;
@@ -250,11 +731,13 @@ int point_to_point(float len){
   */
 int point_to_point_backfoward(float len){
 	float v_temp;
+	int flag=1;
 	speed_cal();
 	len=-len;
 	if(len>30){
 		if(Car.route<20){
 			v_temp=slow_start(-V_onrun);
+			flag=0;
 		}
 		else{
 			pid_realize(&pid_p,len-Car.route);
@@ -262,17 +745,18 @@ int point_to_point_backfoward(float len){
 		}
 	}
 	else{
+		flag=0;
 		pid_realize(&pid_p,len-Car.route);
 		v_temp=pid_p.output;
 	}
 	
-	if(fabs(Car.Speed)<0.03){
+	if(fabs(Car.Speed)<0.03&&fabs(Car.route-len)<0.5){
 		motor_pwm_set(0,0);
 		return OK;
 	}
 	else {
-		//pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
-		motor_speed_set(v_temp-pid_a.output,v_temp+pid_a.output);
+		pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
+		motor_speed_set(v_temp-pid_a.output*flag,v_temp+pid_a.output*flag);
 	}
 	return NOT_OK;
 }	
@@ -284,10 +768,15 @@ int point_to_point_backfoward(float len){
   */
 int Turn_90(int dir){
 	speed_cal();
+//	pid_realize(&pid_turn,(float)-90-Car.Angle);
+////	if(pid_turn.output>0.5) pid_turn.output=0.5;
+////	if(pid_turn.output<-0.5) pid_turn.output=-0.5;
+//	motor_speed_set(pid_turn.output,-pid_turn.output);
+	
+	
 	//×ó×ª£¬Ä¿±ê½Ç¶È-90
 	if(dir==1){
-		if(Car.Angle<-(float)89&&Car.Angle>(float)-91)
-		{
+		if(Car.Angle<(float)-89&&Car.Angle>(float)-91){
 			motor_pwm_set(0,0);
 			return OK;
 		}
@@ -298,7 +787,6 @@ int Turn_90(int dir){
 	}
 	//ÓÒ×ª
 	else if(dir==2){
-		
 		if(Car.Angle>(float)89&&Car.Angle<(float)91){
 			motor_pwm_set(0,0);
 			return OK;
@@ -408,6 +896,7 @@ void motor_speed_set(float vl,float vr){
 	left_pid.cur_val = left_motor.Speed;
 	left_pid.target_val = vl;
 	pid_realize(&left_pid,left_pid.target_val - left_pid.cur_val);
+	pwm_l=left_pid.output==0? 0:left_pid.output+DEADBAND;
 	if(left_pid.output>(float)0.1){
 		pwm_l = left_pid.output+DEADBAND;
 	}
@@ -439,7 +928,7 @@ void motor_speed_set(float vl,float vr){
   */
 void speed_cal(void){
 	uint32_t cur = right_encoder_count;// QEIPositionGet(RIGHT_QEI);
-	static float v_l_last, v_r_last;
+	static float v_l_last, v_r_last,ang_last;
 	float err=0;
 	//ÓÒÂÖ
 	right_motor.QEIPostion = cur;
@@ -466,6 +955,8 @@ void speed_cal(void){
 	Car.Speed = (right_motor.Speed+left_motor.Speed)/2;
 	Car.route = (right_motor.Dis+left_motor.Dis)/2;
 	Car.Angle += (left_motor.Speed - right_motor.Speed)*(float)7.1;
+	Car.Angle = first_order_filter(Car.Angle,ang_last,(float)0.8);
+	ang_last = Car.Angle;
 }
 
 float uint32_sub(uint32_t cur,uint32_t last){
