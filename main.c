@@ -29,10 +29,12 @@ motor left_motor, right_motor;
 pid left_pid,right_pid;	//速度环PID
 pid pid_p;	//位置环PID
 pid pid_a;	//角度环PID
+pid pid_b;	//倒车角度环PID
 pid pid_turn;	//原地转动PID
 float V_onrun=0.5;
 void TIMER0_IERHandler(void);
 int count=0;
+int mission_select=0;
 int main(void)
 {
 //	float vpl = 16,vil = 0,vdl = 0.04;	//左轮PID
@@ -44,9 +46,11 @@ int main(void)
 //	float vpl = 4,vil = 3.5,vdl = 0.8;	//左轮PID
 //	float vpr = 4,vir = 3.5,vdr = 0.8;	//右轮PID
 	float pp = 0.07,pi = 0,pd = 0.0;			//位置环PID
-	float ap = 0.01,ai = 0,ad =0;			//角度环PID
+	float ap = 0.01,ai = 0,ad =0.00;			//角度环PID
+	float bp = 0.004,bi = 0,bd =-0.0001;			//角度环PID
 	float tp = 0.008,ti = 0,td =0;			//原地转动PID
 	int i,j;
+	int32_t pin_read=0;
 	//使用PLL输出频率200MHz，第一个系数2.5分频，得到80MHz
   SysCtlClockSet(SYSCTL_SYSDIV_2_5|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
   //外设初始化
@@ -59,21 +63,17 @@ int main(void)
 	pid_init(&left_pid,vpl,vdl,vil,(float)0.99-DEADBAND,(float)DEADBAND-0.99);
 	pid_init(&right_pid,vpr,vdr,vir,(float)0.99-DEADBAND,(float)DEADBAND-0.99);
 	pid_init(&pid_a,ap,ad,ai,(float)0.5,(float)-0.5);
+	pid_init(&pid_b,bp,bd,bi,(float)0.5,(float)-0.5);
 	pid_init(&pid_p,pp,pd,pi,(float)0.5,(float)-0.5);
 	pid_init(&pid_turn,tp,td,ti,(float)0.5,(float)-0.5);
-	UARTCharPutNonBlocking(UART0_BASE,'a');
-//	motor_pwm_set(0.,0.5);
-	//motor_pwm_set(0.17,-0.22);
 	
-//	//D0
-//	PWM_duty(PWM0_BASE,  PWM_OUT_6,PWM_OUT_6_BIT,PWM_GEN_3,0.5);
-//	//D1
-//	PWM_duty(PWM0_BASE,  PWM_OUT_7,PWM_OUT_7_BIT,PWM_GEN_3,0);
+	pin_read = GPIOPinRead(GPIO_PORTA_BASE,GPIO_PIN_2);
+	if(!pin_read) mission_select+=1;
+	pin_read = GPIOPinRead(GPIO_PORTA_BASE,GPIO_PIN_3);
+	if(!pin_read) mission_select+=2;
+	pin_read = GPIOPinRead(GPIO_PORTA_BASE,GPIO_PIN_4);
+	if(!pin_read) mission_select+=4;
 
-//	//B6
-//		PWM_duty(PWM0_BASE,  PWM_OUT_0,PWM_OUT_0_BIT,PWM_GEN_0,0);
-//		//B7
-//		PWM_duty(PWM0_BASE,  PWM_OUT_1,PWM_OUT_1_BIT,PWM_GEN_0,0.5);
   while(1){
 	//	printf("pwm: %f, %f\r\n",left_pid.output,right_pid.output);
 	//	printf("dv: %f\r\n",pid_a.output);
@@ -97,39 +97,15 @@ void TIMER0_IERHandler(void)
 	//static int v;
 	uint32_t status=TimerIntStatus( TIMER0_BASE,  true);
 	TimerIntClear( TIMER0_BASE,  status);
-//	switch (v){
-//		case 0:{
-//			V_onrun=0.3;
-//			break;
-//		}
-//		case 1:{
-//			V_onrun=0.5;
-//			break;
-//		}
-//		case 2:{
-//			V_onrun=0.7;
-//			break;
-//		}
-//	}
-//	speed_cal();
-//	motor_speed_set(V_onrun,V_onrun);
-//	count++;
-//	if(count==100){
-//		v++;
-//		count=0;
-//		if(v==3) v=0;
-//	}
-
-//	speed_cal();
-//	pid_realize(&pid_a,LINE_DET_POS-line_det_data);
-//	motor_speed_set(V_onrun-pid_a.output,V_onrun+pid_a.output);
 	
 	/***** PID控制环节 *****/
-	//测速并更新路程
-	//point_to_point(20);
-//	point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
-	//if(flag==NOT_OK)
-	//	flag = Turn_90(2);
-	//else motor_pwm_set(0,0);
-	mission1();
+	if(mission_select==1)
+		mission1();
+	else if(mission_select==2)
+		mission2();
+	else if(mission_select==4)
+		mission3();
+	
+	//point_to_point_backfoward(3*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH*2+10);
+	//point_to_point(15);
 }

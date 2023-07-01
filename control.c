@@ -58,7 +58,8 @@ void mission1(void){
 			//按键去抖
 			if(pin_flag==0&&!KEY_READ){
 				//延时约20ms
-
+				for(i=0;i<15;i++)
+					for(j=0;j<2000;j++);
 				
 				if(!KEY_READ){
 					pin_flag=1;
@@ -71,14 +72,14 @@ void mission1(void){
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				det_F=3;
 				state_val++;
-				for(i=0;i<20;i++)
+				for(i=0;i<200;i++)
 					for(j=0;j<2000;j++);
 			}
 			break;
 		}
 		//运动到路口，不需要识别数字
 		case 3:{
-			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2);
+			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2+10);
 			//进入十字路口
 			if(flag==OK){
 				car_reset();
@@ -159,6 +160,7 @@ void mission1(void){
 					Car.Angle+=90;
 				else if(room_num==2)
 					Car.Angle-=90;
+				
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				flag=NOT_OK;
 				state_val++;
@@ -250,7 +252,7 @@ void mission2(void){
 			if(load_F == 1){
 				//延时500ms再启动
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
-				det_F=3;
+				det_F=1;
 				state_val++;
 				for(i=0;i<20;i++)
 					for(j=0;j<2000;j++);
@@ -259,7 +261,7 @@ void mission2(void){
 		}
 		//运动到中段路口，识别数字
 		case 3:{
-			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
+			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+10);
 			//进入十字路口，开始识别数字
 			if(flag==OK&&det_F==1){
 				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
@@ -283,23 +285,23 @@ void mission2(void){
 		}
 		//走到路口中心
 		case 4:{
-			flag = point_to_point(15);
+			UARTCharPutNonBlocking(UART5_BASE,'4');
+			flag = point_to_point(25);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
 				state_val++;//进入下一个状态	
 			}
+			break;
 		}
 		//转90°
 		case 5:{
+			UARTCharPutNonBlocking(UART5_BASE,'5');
 			flag = Turn_90(turn_dir);
 			if(flag == OK){
 				det_F=3;
+				flag = NOT_OK;
 				car_reset();
-				if(turn_dir==1)
-					Car.Angle+=90;
-				else if(turn_dir==2)
-					Car.Angle-=90;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				state_val++;
 			}
@@ -341,7 +343,7 @@ void mission2(void){
 		}
 		//倒车到路口中间
 		case 8:{
-			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2-7);
 			if(flag==OK){
 				det_F=0;
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
@@ -381,6 +383,7 @@ void mission2(void){
 		}
 		//停止
 		case 11:{
+			UARTCharPutNonBlocking(UART5_BASE,'3');
 			motor_pwm_set(0,0);
 		}
 	}
@@ -421,7 +424,7 @@ void mission3(void){
 			if(det_F==0){
 				room_num = num_det_data[0];
 				//未读到数字，再次识别
-				if(room_num == 0){
+				if(room_num <4){
 					det_F = 1;
 					UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
 				}
@@ -459,7 +462,7 @@ void mission3(void){
 		}
 		//运动到远段路口，识别数字
 		case 3:{
-			flag = point_to_point(3*CORRIDOR_LENGTH_1+2*CORRIDOR_WIDTH);
+			flag = point_to_point(3*CORRIDOR_LENGTH_1+2*CORRIDOR_WIDTH+10);
 			//进入十字路口，开始识别数字
 			if(flag==OK&&det_F==1){
 				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
@@ -483,12 +486,13 @@ void mission3(void){
 		}
 		//走到路口中心
 		case 4:{
-			flag = point_to_point(15);
+			flag = point_to_point(25);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
 				state_val++;//进入下一个状态	
 			}
+			break;
 		}
 		//转90°
 		case 5:{
@@ -500,8 +504,9 @@ void mission3(void){
 					Car.Angle+=90;
 				else if(turn_dir[0]==2)
 					Car.Angle-=90;
-				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
-				state_val++;
+					UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+					det_F=1;
+					state_val++;
 			}
 			break;
 		}
@@ -531,12 +536,13 @@ void mission3(void){
 		}
 		//走到路口中心
 		case 7:{
-			flag = point_to_point(15);
+			flag = point_to_point(15+14);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
 				state_val++;//进入下一个状态	
 			}
+			break;
 		}	
 		//转90°
 		case 8:{
@@ -592,7 +598,7 @@ void mission3(void){
 			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
 			if(flag==OK){
 				det_F=0;
-				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
+			//	UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
 				car_reset();
 				flag=NOT_OK;
 				state_val++;
@@ -609,7 +615,7 @@ void mission3(void){
 					Car.Angle+=90;
 				else if(turn_dir[1]==2)
 					Car.Angle-=90;
-				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+		//		UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				flag=NOT_OK;
 				state_val++;
 			}
@@ -617,22 +623,23 @@ void mission3(void){
 		}
 		//走到下一个路口
 		case 13:{
-				flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH);
+				flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+5);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
 				state_val++;//进入下一个状态	
 			}
+			break;
 		}
 		//转90°
 		case 14:{
-			flag = Turn_90(turn_dir[1]%2+1);
+			flag = Turn_90(turn_dir[0]%2+1);
 			if(flag == OK){
 				det_F=3;
 				car_reset();
-				if(turn_dir[1]==2)
+				if(turn_dir[0]==2)
 					Car.Angle+=90;
-				else if(turn_dir[1]==1)
+				else if(turn_dir[0]==1)
 					Car.Angle-=90;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				state_val++;
@@ -654,6 +661,7 @@ void mission3(void){
 		//停止
 		case 16:{
 			motor_pwm_set(0,0);
+			break;
 		}
 	}
 	/***** 状态选择结束 *****/
@@ -731,13 +739,13 @@ int point_to_point(float len){
   */
 int point_to_point_backfoward(float len){
 	float v_temp;
-	int flag=1;
+	//int flag=1;
 	speed_cal();
 	len=-len;
-	if(len>30){
-		if(Car.route<20){
+	if(len<-30){
+		if(Car.route>-20){
 			v_temp=slow_start(-V_onrun);
-			flag=0;
+			//flag=0;
 		}
 		else{
 			pid_realize(&pid_p,len-Car.route);
@@ -745,7 +753,7 @@ int point_to_point_backfoward(float len){
 		}
 	}
 	else{
-		flag=0;
+	//	flag=0;
 		pid_realize(&pid_p,len-Car.route);
 		v_temp=pid_p.output;
 	}
@@ -755,8 +763,8 @@ int point_to_point_backfoward(float len){
 		return OK;
 	}
 	else {
-		pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
-		motor_speed_set(v_temp-pid_a.output*flag,v_temp+pid_a.output*flag);
+		pid_realize(&pid_b,(float)(LINE_DET_POS-line_det_data));
+		motor_speed_set(v_temp+pid_b.output,v_temp-pid_b.output);
 	}
 	return NOT_OK;
 }	
@@ -768,15 +776,9 @@ int point_to_point_backfoward(float len){
   */
 int Turn_90(int dir){
 	speed_cal();
-//	pid_realize(&pid_turn,(float)-90-Car.Angle);
-////	if(pid_turn.output>0.5) pid_turn.output=0.5;
-////	if(pid_turn.output<-0.5) pid_turn.output=-0.5;
-//	motor_speed_set(pid_turn.output,-pid_turn.output);
-	
-	
 	//左转，目标角度-90
 	if(dir==1){
-		if(Car.Angle<(float)-89&&Car.Angle>(float)-91){
+		if(fabs(Car.Angle+90)<0.5){
 			motor_pwm_set(0,0);
 			return OK;
 		}
@@ -787,7 +789,7 @@ int Turn_90(int dir){
 	}
 	//右转
 	else if(dir==2){
-		if(Car.Angle>(float)89&&Car.Angle<(float)91){
+		if(fabs(Car.Angle-90)<0.5){
 			motor_pwm_set(0,0);
 			return OK;
 		}
@@ -803,6 +805,7 @@ int Turn_90(int dir){
 void car_reset(void){
 	Car.route=0;
 	Car.Speed=0;
+	Car.Angle=0;
 	motor_reset(&left_motor);
 	motor_reset(&right_motor);
 	pid_reset(&left_pid);

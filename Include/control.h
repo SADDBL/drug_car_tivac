@@ -70,7 +70,7 @@ typedef struct PID{
 extern motor left_motor, right_motor;
 extern pid left_pid,right_pid;
 extern pid pid_p;	//位置环PID
-extern pid pid_a;	//角度环PID
+extern pid pid_a,pid_b;	//角度环PID
 extern pid pid_turn;	//原地转动PID
 extern car Car;
 extern int state_val;

@@ -1,19 +1,6 @@
 #include "Config.h"
 #include "control.h"
-//void USART2_IRAHandler(void)
-//{
-//	//unsigned char re_buf;
-//	uint32_t status=UARTIntStatus(UART1_BASE,true);
-//	UARTIntClear(UART1_BASE,status);
-//	//判断UART是否有字符未读取
-//	while(UARTCharsAvail(UART1_BASE))
-//	{
-//		//如果有字符为读取就取出，使用UARTCharGetNonBlocking防止等待
-////		re_buf=UARTCharGetNonBlocking(UART1_BASE);
-////		UARTCharPutNonBlocking(UART1_BASE,re_buf);
-//	}
-//}
-int line_det_data;
+int line_det_data = LINE_DET_POS;
 int num_det_data[4];
 uint32_t left_encoder_count,right_encoder_count;	//编码器计数值
 
@@ -28,12 +15,10 @@ void USART5_IRAHandler(void){
 	/*****  *****/
 	while(UARTCharsAvail(UART5_BASE)){
 		rxbuf = UARTCharGetNonBlocking(UART5_BASE);
-		
-
 		if(flag==1){//接收巡线数据
 			data_str[len] = rxbuf;
 			len++;
-			UARTCharPutNonBlocking(UART0_BASE,rxbuf);
+//			UARTCharPutNonBlocking(UART0_BASE,rxbuf);
 //			UARTCharPutNonBlocking(UART0_BASE,len);
 			if(len==3) {
 				flag = 0;
@@ -76,6 +61,7 @@ void USART5_IRAHandler(void){
 void USART7_IRAHandler(void){
 	uint32_t status = UARTIntStatus(UART7_BASE,true);
 	UARTIntClear(UART7_BASE,status);
+	
 }
 
 //左轮编码器
@@ -415,33 +401,33 @@ void UART_Config(void){
 	UARTIntClear(UART5_BASE, UART5_BASE);
 	//启用串口0的中断并开启处理器中断控制器
 	IntEnable(INT_UART5);
-	
-	//双车通讯串口U7
-	//使能GPIO
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-	//使能UART
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
-	// 为UART配置GPIO引脚。
-	GPIOPinConfigure(GPIO_PE0_U7RX);
-	GPIOPinConfigure(GPIO_PE1_U7TX);
-	GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-	//配置串口波特时钟源及参数
-	UARTClockSourceSet(UART7_BASE,UART_CLOCK_SYSTEM);
-	UARTConfigSetExpClk(UART7_BASE,SysCtlClockGet(),115200,UART_CONFIG_WLEN_8|UART_CONFIG_STOP_ONE|UART_CONFIG_PAR_NONE);
-	//使能FIFO并设置FIFO深度
-	UARTFIFOEnable(UART7_BASE);
-	UARTFIFOLevelSet(UART7_BASE,UART_FIFO_RX1_8,UART_FIFO_TX1_8);
-	//配置串口中断
-	UARTIntRegister(UART7_BASE,USART7_IRAHandler);
-	//开启串口接收中断和接收超时中断
-	UARTIntEnable(UART7_BASE, UART_INT_RX|UART_INT_RT);
-	UARTIntClear(UART7_BASE, UART2_BASE);
-	//启用串口0的中断并开启处理器中断控制器
-	IntEnable(INT_UART7);
-	IntMasterEnable();
+//	
+//	//双车通讯串口U7
+//	//使能GPIO
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+//	//使能UART
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
+//	// 为UART配置GPIO引脚。
+//	GPIOPinConfigure(GPIO_PE0_U7RX);
+//	GPIOPinConfigure(GPIO_PE1_U7TX);
+//	GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+//	//配置串口波特时钟源及参数
+//	UARTClockSourceSet(UART7_BASE,UART_CLOCK_SYSTEM);
+//	UARTConfigSetExpClk(UART7_BASE,SysCtlClockGet(),9600,UART_CONFIG_WLEN_8|UART_CONFIG_STOP_ONE|UART_CONFIG_PAR_NONE);
+//	//使能FIFO并设置FIFO深度
+//	UARTFIFOEnable(UART7_BASE);
+//	UARTFIFOLevelSet(UART7_BASE,UART_FIFO_RX1_8,UART_FIFO_TX1_8);
+//	//配置串口中断
+//	UARTIntRegister(UART7_BASE,USART7_IRAHandler);
+//	//开启串口接收中断和接收超时中断
+//	UARTIntEnable(UART7_BASE, UART_INT_RX|UART_INT_RT);
+//	UARTIntClear(UART7_BASE, UART2_BASE);
+//	//启用串口0的中断并开启处理器中断控制器
+//	IntEnable(INT_UART7);
+//	IntMasterEnable();
 	
 	UARTEnable(UART0_BASE);
 	UARTEnable(UART5_BASE);
-	UARTEnable(UART7_BASE);
+//	UARTEnable(UART7_BASE);
 	
 }
