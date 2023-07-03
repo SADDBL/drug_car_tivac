@@ -82,7 +82,7 @@ int main(void)
 	//	printf("qei: %u, %u, %u\r\n",left_encoder_count,right_encoder_count,right_encoder_count-left_encoder_count);
 	//	printf("a: %f, %f, %f\r\n",Car.Angle,-90.0,pid_turn.output);
 	//	printf("cam: %d\r\n",line_det_data);
-		printf("%d\r\n",state_val);
+	//	printf("%d\r\n",0);
 		//printf("p: %f\r\n",pid_p.output);
 	//	printf("route: %f, %f\r\n",Car.route,90.0);
 	//	UARTCharPutNonBlocking(UART0_BASE,'a');

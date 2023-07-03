@@ -2,13 +2,14 @@
 #include "control.h"
 int line_det_data = LINE_DET_POS;
 int num_det_data[4];
+int cross_dis_ang[2];
 uint32_t left_encoder_count,right_encoder_count;	//编码器计数值
 
 //接收树莓派数据
 void USART5_IRAHandler(void){
 	int32_t rxbuf;
 	static int flag = 0,len = 0;
-	static int32_t data_str[5];
+	static int32_t data_str[7];
 	uint32_t status = UARTIntStatus(UART5_BASE,true);
 	UARTIntClear(UART5_BASE,status);
 	
@@ -41,6 +42,19 @@ void USART5_IRAHandler(void){
 				}
 			}
 		}
+		else if(flag == 3){
+			data_str[len] = rxbuf;
+			len ++;
+			if(len==6){
+				flag = 0;
+				cross_dis_ang[0]+=(data_str[0]-'0')*100;
+				cross_dis_ang[0]+=(data_str[1]-'0')*10;
+				cross_dis_ang[0]+=data_str[2]-'0';
+				cross_dis_ang[1]+=(data_str[3]-'0')*100;
+				cross_dis_ang[1]+=(data_str[4]-'0')*10;
+				cross_dis_ang[1]+=data_str[5]-'0';
+			}
+		}
 		else if(flag==0){
 			//接收巡线数据
 			if(rxbuf == 'f'){
@@ -51,6 +65,12 @@ void USART5_IRAHandler(void){
 			else if(rxbuf == 'n'){
 				flag = 2;
 				len = 0;
+			}
+			else if(rxbuf == 'a'){
+				flag = 3;
+				len = 0;
+				cross_dis_ang[0] = 0;
+				cross_dis_ang[1] = 0;
 			}
 		}
 		
@@ -67,7 +87,7 @@ void USART7_IRAHandler(void){
 //左轮编码器
 void left_encoder_handler(void){
 	uint32_t status;
-	int i,j;
+//	int i,j;
 	status = GPIOIntStatus(GPIO_PORTF_BASE,true);
 	GPIOIntClear(GPIO_PORTF_BASE,status);
 	if((status&GPIO_PIN_0)==GPIO_PIN_0){

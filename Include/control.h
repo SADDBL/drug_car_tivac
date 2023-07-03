@@ -18,6 +18,7 @@
 
 #define NUM_DET 'n'
 #define LINE_DET 'f'
+#define CROSS_DET 'a'
 #define DET_OFF 's'
 
 #define LINE_DET_POS 64
@@ -91,9 +92,10 @@ void car_Init(car *c);
 float slow_start(float tar_v);
 int Turn_90(int dir);
 void Turn_180(void);
-int point_to_point(float len);
+int point_to_point(float len,int flag);
 float uint32_sub(uint32_t cur,uint32_t last);
 void Encoder_Config(void);
 void car_reset(void);
 int point_to_point_backfoward(float len);
+int Turn_to_0(void);
 #endif

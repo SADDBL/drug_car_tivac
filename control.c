@@ -4,17 +4,19 @@
 /***** 标志位 *****/
 int det_F;	//识别任务标志位 0：无任务，1：开始阶段识别数字卡片，2：岔路口识别地面数字，3：巡线
 int load_F;	//药物装载标志位 0：未装载，1：已装载
-static int destination_F;	//目的地标志位 1：近端药房，2：中部药房，3：远端药房
+//static int destination_F;	//目的地标志位 1：近端药房，2：中部药房，3：远端药房
 //static int flag=0;	//通用标志位
 int state_val = 0;
 
 /***** 任务函数 *****/
 void mission1(void){
 	static int room_num = 0;	//目标病房号
-	float v_temp = 0;
+//	float v_temp = 0;
 //	int pin_state;
 	static int pin_flag=0;
-	int i,j,flag;
+	int i,j,flag = NOT_OK;
+	int flag1 = NOT_OK;
+	float d_route = 0;
 	/***** 状态选择 *****/
 	switch(state_val){
 		//状态0，初始化并等待
@@ -22,7 +24,7 @@ void mission1(void){
 			//标志位复位
 			det_F = 0;
 			load_F = 0;
-			destination_F = 1;
+//			destination_F = 1;
 			//flag = 0;
 			//结构体复位
 			car_reset();
@@ -37,6 +39,7 @@ void mission1(void){
 		}
 		//识别数字
 		case 1:{
+			if(cross_dis_ang[0]<0.5) GREEN_ON;
 			if(det_F==1) UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
 			//获取摄像头识别的数字
 			if(det_F==0){
@@ -72,6 +75,7 @@ void mission1(void){
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				det_F=3;
 				state_val++;
+				flag1 = NOT_OK;
 				for(i=0;i<200;i++)
 					for(j=0;j<2000;j++);
 			}
@@ -79,10 +83,20 @@ void mission1(void){
 		}
 		//运动到路口，不需要识别数字
 		case 3:{
-			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2+10);
+			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2+10+d_route,1);
+			if((CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2-Car.route)<10&&(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2-Car.route)>8){
+				flag1 = OK;
+				UARTCharPutNonBlocking(UART5_BASE,CROSS_DET);
+				d_route = (cross_dis_ang[0]-77)/15.8+Car.route-(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2);
+				if(d_route>0) YELLOW_ON;
+				if(d_route<0) RED_ON;
+			}
 			//进入十字路口
 			if(flag==OK){
 				car_reset();
+				Car.Angle=0;
+				flag1=NOT_OK;
+				d_route=0;
 				state_val=5;//进入下一个状态
 			}
 			break;
@@ -104,7 +118,10 @@ void mission1(void){
 		}
 		//走到药房
 		case 6:{
-			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2,0);
+//			if(flag==OK){
+//				flag1 = Turn_to_0();
+//			}
 			if(flag==OK){
 				RED_ON;
 				
@@ -140,7 +157,7 @@ void mission1(void){
 		}
 		//倒车到路口中间
 		case 8:{
-			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			flag = point_to_point_backfoward(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2-3);
 			if(flag==OK){
 				det_F=0;
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
@@ -169,7 +186,7 @@ void mission1(void){
 		}
 		//返回起点
 		case 10:{
-			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2);
+			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2,1);
 			
 			if(flag==OK){
 				GREEN_ON;
@@ -191,10 +208,11 @@ void mission1(void){
 void mission2(void){
 	static int room_num = 0;	//目标病房号
 	static int turn_dir = 0;
-	float v_temp = 0;
+//	float v_temp = 0;
 //	int pin_state;
 	static int pin_flag=0;
-	int i,j,flag = NOT_OK;
+	int i,j,flag = NOT_OK,flag1 = NOT_OK;
+	float d_route=0;
 	/***** 状态选择 *****/
 	switch(state_val){
 		//状态0，初始化并等待
@@ -202,7 +220,7 @@ void mission2(void){
 			//标志位复位
 			det_F = 0;
 			load_F = 0;
-			destination_F = 1;
+//			destination_F = 1;
 			//flag = 0;
 			//结构体复位
 			car_reset();
@@ -261,7 +279,7 @@ void mission2(void){
 		}
 		//运动到中段路口，识别数字
 		case 3:{
-			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+10);
+			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+10,1);
 			//进入十字路口，开始识别数字
 			if(flag==OK&&det_F==1){
 				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
@@ -285,8 +303,13 @@ void mission2(void){
 		}
 		//走到路口中心
 		case 4:{
-			UARTCharPutNonBlocking(UART5_BASE,'4');
-			flag = point_to_point(25);
+			if(flag1==NOT_OK){
+				UARTCharPutNonBlocking(UART5_BASE,CROSS_DET);
+				d_route = cross_dis_ang[0]/18;
+				if(d_route!=0) flag1 = OK;
+			}
+			if(flag1 == OK)
+				flag = point_to_point(d_route,1);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
@@ -296,25 +319,26 @@ void mission2(void){
 		}
 		//转90°
 		case 5:{
-			UARTCharPutNonBlocking(UART5_BASE,'5');
 			flag = Turn_90(turn_dir);
 			if(flag == OK){
 				det_F=3;
 				flag = NOT_OK;
 				car_reset();
+				flag1=NOT_OK;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
 				state_val++;
 			}
 			break;
 		}
 		//走到药房
-		case 6:{
-			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+		case 6:{			
+			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2,1);
 			if(flag==OK){
 				RED_ON;
 				det_F=0;
 				UARTCharPutNonBlocking(UART5_BASE,DET_OFF);
 				car_reset();
+				flag1=NOT_OK;
 				flag=NOT_OK;
 				state_val++;
 			}
@@ -370,8 +394,9 @@ void mission2(void){
 			break;
 		}
 		//返回起点
+
 		case 10:{
-			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+CORRIDOR_WIDTH/2);
+			flag = point_to_point(2*CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+CORRIDOR_WIDTH/2,1);
 			if(flag==OK){
 				GREEN_ON;
 				det_F = 0;
@@ -383,7 +408,6 @@ void mission2(void){
 		}
 		//停止
 		case 11:{
-			UARTCharPutNonBlocking(UART5_BASE,'3');
 			motor_pwm_set(0,0);
 		}
 	}
@@ -393,10 +417,10 @@ void mission2(void){
 void mission3(void){
 	static int room_num = 0;	//目标病房号
 	static int turn_dir[2]= {0,0};
-	float v_temp = 0;
+//	float v_temp = 0;
 //	int pin_state;
 	static int pin_flag=0;
-	int i,j,flag = NOT_OK;
+	int i,j,flag = NOT_OK,flag1 = NOT_OK;
 	/***** 状态选择 *****/
 	switch(state_val){
 		//状态0，初始化并等待
@@ -404,7 +428,7 @@ void mission3(void){
 			//标志位复位
 			det_F = 0;
 			load_F = 0;
-			destination_F = 1;
+//			destination_F = 1;
 			//flag = 0;
 			//结构体复位
 			car_reset();
@@ -462,7 +486,7 @@ void mission3(void){
 		}
 		//运动到远段路口，识别数字
 		case 3:{
-			flag = point_to_point(3*CORRIDOR_LENGTH_1+2*CORRIDOR_WIDTH+10);
+			flag = point_to_point(3*CORRIDOR_LENGTH_1+2*CORRIDOR_WIDTH+10,1);
 			//进入十字路口，开始识别数字
 			if(flag==OK&&det_F==1){
 				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
@@ -486,7 +510,7 @@ void mission3(void){
 		}
 		//走到路口中心
 		case 4:{
-			flag = point_to_point(25);
+			flag = point_to_point(25,1);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
@@ -512,7 +536,7 @@ void mission3(void){
 		}
 		//走到下一个路口，并识别数字
 		case 6:{
-			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2);
+			flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH/2,1);
 			//进入十字路口，开始识别数字
 			if(flag==OK&&det_F==1){
 				UARTCharPutNonBlocking(UART5_BASE,NUM_DET);
@@ -536,7 +560,7 @@ void mission3(void){
 		}
 		//走到路口中心
 		case 7:{
-			flag = point_to_point(15+14);
+			flag = point_to_point(15+14,1);
 			if(flag == OK){
 				flag=NOT_OK;
 				car_reset();
@@ -561,7 +585,7 @@ void mission3(void){
 		}
 		//走到药房
 		case 9:{
-			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2);
+			flag = point_to_point(CORRIDOR_LENGTH_2+CORRIDOR_WIDTH/2,0);
 			if(flag==OK){
 				RED_ON;
 				det_F=0;
@@ -623,8 +647,11 @@ void mission3(void){
 		}
 		//走到下一个路口
 		case 13:{
-				flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+5);
+				flag = point_to_point(CORRIDOR_LENGTH_1+CORRIDOR_WIDTH+5,1);
 			if(flag == OK){
+				flag1 = Turn_to_0();
+			}
+			if(flag1 == OK){
 				flag=NOT_OK;
 				car_reset();
 				state_val++;//进入下一个状态	
@@ -642,13 +669,14 @@ void mission3(void){
 				else if(turn_dir[0]==1)
 					Car.Angle-=90;
 				UARTCharPutNonBlocking(UART5_BASE,LINE_DET);
+				flag = NOT_OK;
 				state_val++;
 			}
 			break;
 		}
 		//返回起点
 		case 15:{
-			flag = point_to_point(3*CORRIDOR_LENGTH_1+2.5*CORRIDOR_WIDTH);
+			flag = point_to_point(3*CORRIDOR_LENGTH_1+(float)2.5*CORRIDOR_WIDTH,1);
 			if(flag==OK){
 				GREEN_ON;
 				det_F = 0;
@@ -702,9 +730,10 @@ float slow_start(float tar_v){
 /**
   * @brief  小车从一点直行到另一点
   * @param  len 距离
+* @param  flag 1:循线 0：不循线
   * @retval OK 已到达 NOT_OK 未到达
   */
-int point_to_point(float len){
+int point_to_point(float len,int flag){
 	float v_temp;
 	speed_cal();
 	if(len>30){
@@ -726,8 +755,11 @@ int point_to_point(float len){
 		return OK;
 	}
 	else {
-		pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
-		motor_speed_set(v_temp-pid_a.output,v_temp+pid_a.output);
+		if(flag==1){
+			pid_realize(&pid_a,(float)(LINE_DET_POS-line_det_data));
+			motor_speed_set(v_temp-pid_a.output,v_temp+pid_a.output);
+		}
+		else motor_speed_set(v_temp,v_temp);
 	}
 	return NOT_OK;
 }	
@@ -821,6 +853,22 @@ void Turn_180(void){
 	speed_cal();
 	pid_realize(&pid_a,180-Car.Angle);
 	motor_speed_set(V_onrun+pid_a.output,V_onrun-pid_a.output);
+}
+
+/**
+  * @brief  小车原地转至0°
+  * @param  None
+  * @retval 状态
+  */
+int Turn_to_0(void){
+	speed_cal();
+	pid_realize(&pid_turn,(float)-Car.Angle/2);
+	motor_speed_set(pid_turn.output,-pid_turn.output);
+	if(fabs(Car.Angle)<0.2){
+		motor_pwm_set(0,0);
+		return OK;
+	}
+	return NOT_OK;
 }
 
 /***** 电机控制底层 *****/

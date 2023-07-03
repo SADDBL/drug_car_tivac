@@ -22,6 +22,7 @@ extern void TIMER0_IERHandler(void);
 extern uint32_t left_encoder_count,right_encoder_count;	//±àÂëÆ÷¼ÆÊıÖµ
 extern int line_det_data;
 extern int num_det_data[4];
+extern int cross_dis_ang[2];
 
 extern int det_F;
 extern int load_F;
